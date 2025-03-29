@@ -192,12 +192,29 @@ async def assess_property_category(property_data, category_name, llm):
     }
     
     # Create the prompt with the appropriate template
-    prompt = PromptTemplate(
-        input_variables=["property_age", "number_of_units", "construction_type", 
-                         "safety_features", "missing_safety_features", "location"],
-        template=templates[category_name],
-        partial_variables={"format_instructions": category_format_instructions}
-    )
+    # Make sure all input variables are defined for each template correctly based on what's in the template
+    if category_name == "Property Assessment":
+        prompt = PromptTemplate(
+            input_variables=["property_age", "number_of_units", "construction_type", 
+                            "safety_features", "missing_safety_features"],
+            template=templates[category_name],
+            partial_variables={"format_instructions": category_format_instructions}
+        )
+    elif category_name == "Location Factors":
+        # Location Factors only needs location and number_of_units based on the template
+        prompt = PromptTemplate(
+            input_variables=["location", "number_of_units"],
+            template=templates[category_name],
+            partial_variables={"format_instructions": category_format_instructions}
+        )
+    else:
+        # For "Liability Risks" include all parameters
+        prompt = PromptTemplate(
+            input_variables=["property_age", "number_of_units", "construction_type", 
+                            "safety_features", "missing_safety_features", "location"],
+            template=templates[category_name],
+            partial_variables={"format_instructions": category_format_instructions}
+        )
     
     # Create the LLM chain
     chain = LLMChain(llm=llm, prompt=prompt)
@@ -210,14 +227,31 @@ async def assess_property_category(property_data, category_name, llm):
     # Run the chain
     try:
         # Using acall instead of arun for proper async execution
-        result = await chain.acall({
-            "property_age": property_data.propertyAge,
-            "number_of_units": property_data.numberOfUnits,
-            "construction_type": property_data.constructionType,
-            "safety_features": safety_features_str,
-            "missing_safety_features": missing_safety_features_str,
-            "location": location_str
-        })
+        # Create input data based on the specific category being processed
+        if category_name == "Property Assessment":
+            input_data = {
+                "property_age": property_data.propertyAge,
+                "number_of_units": property_data.numberOfUnits,
+                "construction_type": property_data.constructionType,
+                "safety_features": safety_features_str,
+                "missing_safety_features": missing_safety_features_str
+            }
+        elif category_name == "Location Factors":
+            input_data = {
+                "location": location_str,
+                "number_of_units": property_data.numberOfUnits
+            }
+        else:  # Liability Risks
+            input_data = {
+                "property_age": property_data.propertyAge,
+                "number_of_units": property_data.numberOfUnits,
+                "construction_type": property_data.constructionType,
+                "safety_features": safety_features_str,
+                "missing_safety_features": missing_safety_features_str,
+                "location": location_str
+            }
+            
+        result = await chain.acall(input_data)
         result = result.get("text", "")
         
         # Parse the result and extract risk factors
