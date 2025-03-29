@@ -1,12 +1,14 @@
 from langchain.llms import OpenAI, Anthropic
 from langchain.prompts import PromptTemplate
 from langchain.chains import LLMChain
+from langchain.chat_models import ChatOpenAI
 from langchain.output_parsers import StructuredOutputParser, ResponseSchema
 import json
 import os
 from dotenv import load_dotenv
 from models import RiskLevel, RiskAssessment
 from typing import Optional, Dict, Any, Union
+import sys
 
 # Load environment variables
 load_dotenv()
@@ -36,15 +38,16 @@ def get_risk_assessment(property_data, provider="openai", model_name=None, tempe
     provider = provider.lower()
     
     if provider == "openai":
-        default_model = "gpt-3.5-turbo-instruct"
-        llm = OpenAI(temperature=temperature, model_name=model_name or default_model)
+        default_model = "gpt-3.5-turbo"
+        selected_model = model_name or default_model
+        llm = ChatOpenAI(temperature=temperature, model_name=selected_model)
     elif provider == "anthropic":
         default_model = "claude-2"
         llm = Anthropic(temperature=temperature, model=model_name or default_model)
     else:
         # Default to OpenAI if provider not recognized
-        default_model = "gpt-3.5-turbo-instruct"
-        llm = OpenAI(temperature=temperature, model_name=model_name or default_model)
+        default_model = "gpt-3.5-turbo"
+        llm = ChatOpenAI(temperature=temperature, model_name=model_name or default_model)
     
     # Create a prompt template
     template = """
