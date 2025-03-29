@@ -60,7 +60,8 @@ def get_risk_assessment(property_data, provider="openai", model_name=None, tempe
         Property Age: {property_age} years
         Number of Units: {number_of_units}
         Construction Type: {construction_type}
-        Safety Features: {safety_features}
+        Safety Features Present: {safety_features}
+        Safety Features Missing: {missing_safety_features}
         Location: {location}
         </property_info>
         
@@ -77,20 +78,27 @@ def get_risk_assessment(property_data, provider="openai", model_name=None, tempe
            a. Property Assessment:
               - Evaluate the property age and its impact on potential structural issues or maintenance needs
               - Assess the construction type and its durability
-              - Review the safety features and their adequacy
+              - Review both the present safety features and the missing safety features and their impact on the property's safety profile
         
            b. Location Factors:
               - Research the location for potential natural disaster risks (e.g., floods, earthquakes, hurricanes)
               - Evaluate the neighborhood safety and crime rates
         
            c. Liability Risks:
-              - Consider potential tenant safety issues based on the property features and condition
-              - Assess regulatory compliance risks related to local housing laws and building codes
+              - Consider potential tenant safety issues based on the property features, condition, and especially missing safety features
+              - Assess regulatory compliance risks related to local housing laws and building codes, especially in regards to missing safety features
         
-        5. After analyzing all categories, determine the overall risk level (No Risk, Low, Medium, or High) for the property.
-        6. Ensure that your assessment is comprehensive, objective, and based solely on the provided information. Do not make assumptions about information that is not explicitly given.
+        5. Pay particular attention to missing safety features and their impact on:
+           - Tenant safety
+           - Property value
+           - Insurance costs
+           - Legal liability
+           - Regulatory compliance
         
-        7. Follow any additional format instructions provided:
+        6. After analyzing all categories, determine the overall risk level (No Risk, Low, Medium, or High) for the property.
+        7. Ensure that your assessment is comprehensive, objective, and based solely on the provided information. Do not make assumptions about information that is not explicitly given.
+        
+        8. Follow any additional format instructions provided:
         {format_instructions}
         
         Remember to provide clear, concise, and professional language throughout your assessment. Your goal is to give an accurate and useful risk evaluation for the multi-family property based on the given information.
@@ -100,7 +108,7 @@ def get_risk_assessment(property_data, provider="openai", model_name=None, tempe
     
     # Create the prompt with the template
     prompt = PromptTemplate(
-        input_variables=["property_age", "number_of_units", "construction_type", "safety_features", "location"],
+        input_variables=["property_age", "number_of_units", "construction_type", "safety_features", "missing_safety_features", "location"],
         template=template,
         partial_variables={"format_instructions": format_instructions}
     )
@@ -110,6 +118,7 @@ def get_risk_assessment(property_data, provider="openai", model_name=None, tempe
     
     # Run the chain
     safety_features_str = ", ".join(property_data.safetyFeatures) if property_data.safetyFeatures else "None"
+    missing_safety_features_str = ", ".join(property_data.missingSafetyFeatures) if property_data.missingSafetyFeatures else "None"
     location_str = property_data.location if property_data.location else "Not specified"
     
     result = chain.run({
@@ -117,6 +126,7 @@ def get_risk_assessment(property_data, provider="openai", model_name=None, tempe
         "number_of_units": property_data.numberOfUnits,
         "construction_type": property_data.constructionType,
         "safety_features": safety_features_str,
+        "missing_safety_features": missing_safety_features_str,
         "location": location_str
     })
     

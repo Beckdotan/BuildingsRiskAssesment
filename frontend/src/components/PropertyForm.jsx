@@ -7,6 +7,7 @@ const PropertyForm = ({ onSubmit }) => {
     numberOfUnits: '',
     constructionType: '',
     safetyFeatures: [],
+    missingSafetyFeatures: [],
     location: ''
   });
 
@@ -28,6 +29,14 @@ const PropertyForm = ({ onSubmit }) => {
     'Secured Access'
   ];
 
+  // Initialize missing safety features on component mount
+  React.useEffect(() => {
+    setFormData(prevData => ({
+      ...prevData,
+      missingSafetyFeatures: [...safetyFeatureOptions] // All features start as missing
+    }));
+  }, []);
+
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData({
@@ -37,20 +46,31 @@ const PropertyForm = ({ onSubmit }) => {
   };
 
   const handleSafetyFeatureChange = (feature) => {
-    const updatedFeatures = [...formData.safetyFeatures];
+    let updatedFeatures = [...formData.safetyFeatures];
+    let updatedMissingFeatures = [...formData.missingSafetyFeatures];
     
     if (updatedFeatures.includes(feature)) {
       // Remove feature if already selected
       const index = updatedFeatures.indexOf(feature);
       updatedFeatures.splice(index, 1);
+      
+      // Add to missing features
+      updatedMissingFeatures.push(feature);
     } else {
       // Add feature if not selected
       updatedFeatures.push(feature);
+      
+      // Remove from missing features
+      const index = updatedMissingFeatures.indexOf(feature);
+      if (index !== -1) {
+        updatedMissingFeatures.splice(index, 1);
+      }
     }
     
     setFormData({
       ...formData,
-      safetyFeatures: updatedFeatures
+      safetyFeatures: updatedFeatures,
+      missingSafetyFeatures: updatedMissingFeatures
     });
   };
 

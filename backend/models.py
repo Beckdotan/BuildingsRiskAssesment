@@ -13,6 +13,7 @@ class PropertyData(BaseModel):
     numberOfUnits: int
     constructionType: str
     safetyFeatures: List[str]
+    missingSafetyFeatures: Optional[List[str]] = [] 
     location: Optional[str] = None
 
 class RiskFactor(BaseModel):
