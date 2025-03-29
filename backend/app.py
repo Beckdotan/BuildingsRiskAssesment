@@ -1,8 +1,10 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
 import os
 from models import PropertyData, RiskLevel, RiskFactor, RiskCategory, RiskAssessment
+from risk_assessment import get_risk_assessment
+from typing import Optional
 
 # Create FastAPI app
 app = FastAPI(title="Multi-Family Property Risk Assessment API")
@@ -17,73 +19,18 @@ app.add_middleware(
 )
 
 @app.post("/api/assess", response_model=RiskAssessment)
-async def assess_property(property_data: PropertyData):
-    # In a real implementation, this would integrate with an LLM
-    # For now, we'll return a mock response
-    risk_assessment = {
-        "overall_risk_level": "Medium",
-        "categories": [
-            {
-                "category_name": "Property Assessment",
-                "category_risk_level": "Medium",
-                "risk_factors": [
-                    {
-                        "category": "Building Age",
-                        "risk_level": "High",
-                        "description": "The property's age suggests potential issues with electrical systems and plumbing."
-                    },
-                    {
-                        "category": "Construction Materials",
-                        "risk_level": "Low",
-                        "description": "The construction materials used are generally resistant to common hazards."
-                    },
-                    {
-                        "category": "Safety Features",
-                        "risk_level": "Medium",
-                        "description": "Some essential safety features are present, but additional measures could improve overall safety."
-                    }
-                ]
-            },
-            {
-                "category_name": "Location Factors",
-                "category_risk_level": "Low",
-                "risk_factors": [
-                    {
-                        "category": "Natural Disasters",
-                        "risk_level": "No Risk",
-                        "description": "The property is located in an area with low natural disaster probability."
-                    },
-                    {
-                        "category": "Neighborhood Safety",
-                        "risk_level": "Low",
-                        "description": "The neighborhood has a relatively low crime rate and good emergency services access."
-                    }
-                ]
-            },
-            {
-                "category_name": "Liability Risks",
-                "category_risk_level": "Medium",
-                "risk_factors": [
-                    {
-                        "category": "Tenant Safety",
-                        "risk_level": "Medium",
-                        "description": "Some potential liability concerns related to common areas and facility maintenance."
-                    },
-                    {
-                        "category": "Regulatory Compliance",
-                        "risk_level": "Low",
-                        "description": "The property appears to meet most regulatory requirements with minor improvements needed."
-                    }
-                ]
-            }
-        ]
-    }
-    
-    return risk_assessment
-
-@app.get("/")
-async def root():
-    return {"message": "Welcome to the Multi-Family Property Risk Assessment API"}
+async def assess_property(
+    property_data: PropertyData,
+    provider: Optional[str] = Query("openai", description="LLM provider to use (openai, anthropic)"),
+    model_name: Optional[str] = Query(None, description="Specific model to use (default: 'gpt-3.5-turbo-instruct' for OpenAI, 'claude-2' for Anthropic)"),
+    temperature: Optional[float] = Query(0.2, description="Temperature setting for the LLM (controls randomness)")
+):
+    # Use LangChain to generate a risk assessment
+    try:
+        risk_assessment = get_risk_assessment(property_data, provider, model_name, temperature)
+        return risk_assessment
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error generating risk assessment: {str(e)}")
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
