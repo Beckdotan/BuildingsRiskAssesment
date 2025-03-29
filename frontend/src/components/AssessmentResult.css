@@ -1,0 +1,147 @@
+.assessment-result {
+  max-width: 800px;
+  margin: 2rem auto 0;
+  padding: 1.5rem;
+  background-color: #f8f9fa;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.assessment-result h2 {
+  color: #2c3e50;
+  text-align: center;
+  margin-bottom: 1.5rem;
+}
+
+.score-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 2rem;
+}
+
+.score-circle {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  background-color: #ecf0f1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 1rem;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.score-value {
+  font-size: 2.5rem;
+  font-weight: bold;
+  color: #2c3e50;
+}
+
+.score-label {
+  font-size: 0.9rem;
+  color: #7f8c8d;
+}
+
+.score-description {
+  text-align: center;
+}
+
+.risk-level {
+  font-weight: bold;
+  padding: 0.3rem 0.8rem;
+  border-radius: 20px;
+  display: inline-block;
+}
+
+.risk-level.low {
+  background-color: #d5f5e3;
+  color: #27ae60;
+}
+
+.risk-level.medium {
+  background-color: #fef9e7;
+  color: #f39c12;
+}
+
+.risk-level.high {
+  background-color: #fadbd8;
+  color: #e74c3c;
+}
+
+.risk-factors {
+  margin-bottom: 2rem;
+}
+
+.risk-factors h3, .recommendations h3 {
+  color: #2c3e50;
+  margin-bottom: 1rem;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 0.5rem;
+}
+
+.risk-factor {
+  margin-bottom: 1rem;
+  padding: 1rem;
+  border-radius: 4px;
+  border-left: 4px solid #ddd;
+}
+
+.risk-factor.low {
+  background-color: #f8fffa;
+  border-left-color: #27ae60;
+}
+
+.risk-factor.medium {
+  background-color: #fffcf5;
+  border-left-color: #f39c12;
+}
+
+.risk-factor.high {
+  background-color: #fff5f5;
+  border-left-color: #e74c3c;
+}
+
+.risk-factor-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.risk-factor h4 {
+  margin: 0;
+  color: #34495e;
+}
+
+.risk-level-badge {
+  font-size: 0.8rem;
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  font-weight: bold;
+}
+
+.risk-factor.low .risk-level-badge {
+  background-color: #d5f5e3;
+  color: #27ae60;
+}
+
+.risk-factor.medium .risk-level-badge {
+  background-color: #fef9e7;
+  color: #f39c12;
+}
+
+.risk-factor.high .risk-level-badge {
+  background-color: #fadbd8;
+  color: #e74c3c;
+}
+
+.recommendations ul {
+  padding-left: 1.5rem;
+}
+
+.recommendations li {
+  margin-bottom: 0.5rem;
+  line-height: 1.5;
+}
