@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import List
+from typing import List, Optional
 from enum import Enum
 
 class RiskLevel(str, Enum):
@@ -13,6 +13,7 @@ class PropertyData(BaseModel):
     numberOfUnits: int
     constructionType: str
     safetyFeatures: List[str]
+    location: Optional[str] = None
 
 class RiskFactor(BaseModel):
     category: str

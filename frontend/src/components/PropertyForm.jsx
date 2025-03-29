@@ -6,7 +6,8 @@ const PropertyForm = ({ onSubmit }) => {
     propertyAge: '',
     numberOfUnits: '',
     constructionType: '',
-    safetyFeatures: []
+    safetyFeatures: [],
+    location: ''
   });
 
   const constructionTypes = [
@@ -104,6 +105,18 @@ const PropertyForm = ({ onSubmit }) => {
               </option>
             ))}
           </select>
+        </div>
+
+        <div className="form-group">
+          <label htmlFor="location">Location (optional)</label>
+          <input
+            type="text"
+            id="location"
+            name="location"
+            value={formData.location}
+            onChange={handleChange}
+            placeholder="City, State or Address"
+          />
         </div>
 
         <div className="form-group">
