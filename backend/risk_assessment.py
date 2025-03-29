@@ -114,13 +114,20 @@ async def assess_property_category(property_data, category_name, llm):
             <property_info>
             Location: {location}
             Number of Units: {number_of_units}
+            Property Age: {property_age} years
+            Construction type : {construction_type}
+            
             </property_info>
             
             Guidelines for Location Assessment:
-            1. Natural disaster risks:
-               - Research the location for potential flood zones
-               - Assess earthquake, hurricane, tornado, or wildfire risks for the area
-               - Consider regional climate change impacts
+            1. Natural disaster risks related to building age and location:
+               - Research the location for potential flood zones and when flood-resistant building codes were implemented in this area
+               - Assess earthquake risks and when seismic building codes were implemented in this region
+               - Evaluate hurricane, tornado, or wildfire risks and relevant building code timelines
+               - Consider if the building's age / construction type predates important safety regulations for the specific hazards in this location
+               - Determine if the property would have been built before or after major regulatory updates relevant to its location's risks
+               - Consider the likelihood of this events to happn and the impact on the building they might cause and explain both factors in your final answer. 
+               - Make sure you are only refrencing natural dissasters that are relevant to the specific location only!
             
             2. Neighborhood factors:
                - Evaluate neighborhood safety and crime rates
@@ -131,6 +138,7 @@ async def assess_property_category(property_data, category_name, llm):
                - Local housing regulations and compliance requirements
                - Zoning restrictions and development trends
                - Rent control or other regulatory considerations
+               - Age-specific regulations or exemptions that might apply
             
             4. Economic factors:
                - Local employment rates and major employers
@@ -139,7 +147,11 @@ async def assess_property_category(property_data, category_name, llm):
             
             For EACH risk factor you identify, assign a risk level (No Risk, Low, Medium, or High) and provide a clear explanation.
             
-            If the location is "Not specified", focus on general location risks associated with multi-family properties and assume a moderate risk level for most factors.
+            When evaluating natural disaster risks, use building age to determine if the property was likely built before or after important safety regulations. For example:
+            - If the building is 30 years old in an earthquake-prone area, determine what seismic codes would have been in place then compared to now
+            - If the building is in a flood zone, evaluate if it was constructed before or after modern flood mitigation requirements
+            
+            If the location is "Not specified", focus on general location risks associated with multi-family properties, consider age-related regional risks based on typical building code evolution in the United States, and assume a moderate risk level for most factors.
             
             Return ONLY the risk factors for Location Factors. Include at least 3-5 specific risk factors.
             
@@ -203,7 +215,7 @@ async def assess_property_category(property_data, category_name, llm):
     elif category_name == "Location Factors":
         # Location Factors only needs location and number_of_units based on the template
         prompt = PromptTemplate(
-            input_variables=["location", "number_of_units"],
+            input_variables=["location", "number_of_units", "property_age", "construction_type"],
             template=templates[category_name],
             partial_variables={"format_instructions": category_format_instructions}
         )
@@ -239,7 +251,10 @@ async def assess_property_category(property_data, category_name, llm):
         elif category_name == "Location Factors":
             input_data = {
                 "location": location_str,
-                "number_of_units": property_data.numberOfUnits
+                "number_of_units": property_data.numberOfUnits,
+                "property_age": property_data.propertyAge,
+                "construction_type": property_data.constructionType
+                
             }
         else:  # Liability Risks
             input_data = {
