@@ -127,7 +127,7 @@ async def assess_property_category(property_data, category_name, llm):
                - Consider if the building's age / construction type predates important safety regulations for the specific hazards in this location
                - Determine if the property would have been built before or after major regulatory updates relevant to its location's risks
                - Consider the likelihood of this events to happn and the impact on the building they might cause and explain both factors in your final answer. 
-               - Make sure you are only refrencing natural dissasters that are relevant to the specific location only!
+               - IMPORTANT! Make sure you are only refrencing natural dissasters that are relevant to the specific location only! Explain why its relevant! 
             
             2. Neighborhood factors:
                - Evaluate neighborhood safety and crime rates
@@ -281,11 +281,19 @@ async def assess_property_category(property_data, category_name, llm):
         risk_levels = {"No Risk": 0, "Low": 1, "Medium": 2, "High": 3}
         highest_risk = 0
         
+           # Calculate average risk level for the category
+        total_risk = 0
+        factor_count = len(parsed_result["risk_factors"])
+        
         for factor in parsed_result["risk_factors"]:
             factor_risk = risk_levels.get(factor["risk_level"], 0)
-            highest_risk = max(highest_risk, factor_risk)
+            total_risk += factor_risk
         
-        category_risk_level = list(risk_levels.keys())[highest_risk]
+        # Calculate average and round to nearest integer
+        avg_risk = round(total_risk / factor_count) if factor_count > 0 else 0
+        
+        # Map the average risk back to a risk level string
+        category_risk_level = list(risk_levels.keys())[avg_risk]
         
         # Create and return the category
         return RiskCategory(
@@ -318,49 +326,28 @@ async def get_risk_assessment(property_data, provider="openai", model_name=None,
     tasks = [assess_property_category(property_data, category, llm) for category in categories]
     category_results = await asyncio.gather(*tasks)
     
-    # Determine overall risk level (highest of any category)
+    # Define risk levels mapping
     risk_levels = {"No Risk": 0, "Low": 1, "Medium": 2, "High": 3}
-    highest_risk = 0
+    
+    # Calculate average risk level
+    total_risk = 0
+    category_count = len(category_results)
     
     for category in category_results:
         category_risk = risk_levels.get(category.category_risk_level, 0)
-        highest_risk = max(highest_risk, category_risk)
+        total_risk += category_risk
     
-    overall_risk_level = list(risk_levels.keys())[highest_risk]
+    # Calculate average and round to nearest integer
+    avg_risk = round(total_risk / category_count) if category_count > 0 else 0
     
+    # Map the average risk back to a risk level string
+    overall_risk_level = list(risk_levels.keys())[avg_risk]
+    
+    print(""" avg Risk {avg_risk}, Category Count {category_count}""")
     # Create and return the complete risk assessment
     return {
         "overall_risk_level": overall_risk_level,
         "categories": category_results
     }
 
-# For compatibility with both async and sync contexts
-def get_risk_assessment_sync(property_data, provider="openai", model_name=None, temperature=0.2):
-    """
-    Synchronous wrapper for the async risk assessment function.
-    This version works safely within FastAPI's existing event loop.
-    """
-    try:
-        # Check if we're already in an event loop
-        loop = asyncio.get_event_loop()
-        if loop.is_running():
-            # Create a new future in the running loop
-            return asyncio.run_coroutine_threadsafe(
-                get_risk_assessment(property_data, provider, model_name, temperature),
-                loop
-            ).result()
-        else:
-            # If no loop is running, use run_until_complete
-            return loop.run_until_complete(
-                get_risk_assessment(property_data, provider, model_name, temperature)
-            )
-    except RuntimeError:
-        # If there's no event loop in this thread, create one
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        try:
-            return loop.run_until_complete(
-                get_risk_assessment(property_data, provider, model_name, temperature)
-            )
-        finally:
-            loop.close()
+

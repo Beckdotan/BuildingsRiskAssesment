@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
 import os
 from models import PropertyData, RiskLevel, RiskFactor, RiskCategory, RiskAssessment
-from risk_assessment import get_risk_assessment, get_risk_assessment_sync
+from risk_assessment import get_risk_assessment
 from typing import Optional
 
 # Create FastAPI app
