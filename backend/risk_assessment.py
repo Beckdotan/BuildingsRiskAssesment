@@ -13,10 +13,11 @@ import sys
 # Load environment variables
 load_dotenv()
 
-# Define response schemas for structured output
+# Define response schemas for structured output - with very explicit field requirements
 response_schemas = [
     ResponseSchema(name="overall_risk_level", description="The overall risk level of the property: 'No Risk', 'Low', 'Medium', or 'High'"),
     ResponseSchema(name="categories", description="A list of risk categories, where each category must have exactly these fields: 'category_name' (string), 'category_risk_level' (one of: 'No Risk', 'Low', 'Medium', 'High'), and 'risk_factors' (array of objects where each object has exactly these fields: 'category' (string), 'risk_level' (one of: 'No Risk', 'Low', 'Medium', 'High'), and 'description' (string))")
+
 ]
 
 output_parser = StructuredOutputParser.from_response_schemas(response_schemas)
@@ -49,25 +50,50 @@ def get_risk_assessment(property_data, provider="openai", model_name=None, tempe
         default_model = "gpt-3.5-turbo"
         llm = ChatOpenAI(temperature=temperature, model_name=model_name or default_model)
     
-    # Create a prompt template
+    # Create a prompt template with clearer format requirements
     template = """
-    You are a professional risk assessor for multi-family properties. Analyze the following property information and provide a comprehensive risk assessment.
-    
-    Property Information:
-    - Property Age: {property_age} years
-    - Number of Units: {number_of_units}
-    - Construction Type: {construction_type}
-    - Safety Features: {safety_features}
-    - Location: {location}
-    
-    Provide a detailed risk assessment with the following components:
-    1. Overall risk level (No Risk, Low, Medium, or High)
-    2. Risk categories including:
-       - Property Assessment (building age, construction materials, safety features)
-       - Location Factors (natural disasters, neighborhood safety)
-       - Liability Risks (tenant safety, regulatory compliance)
-    
-    For each category, provide specific risk factors with their individual risk levels and descriptions.
+        You are a professional risk assessor specializing in multi-family properties. Your task is to analyze the given property information and provide a comprehensive risk assessment. Follow these instructions carefully to complete the assessment:
+        
+        1. Review the following property information:
+        
+        <property_info>
+        Property Age: {property_age} years
+        Number of Units: {number_of_units}
+        Construction Type: {construction_type}
+        Safety Features: {safety_features}
+        Location: {location}
+        </property_info>
+        
+        2. Conduct a thorough risk assessment by analyzing the following categories:
+        
+           a. Property Assessment
+           b. Location Factors
+           c. Liability Risks
+        
+        3. For each category, identify specific risk factors, assign individual risk levels (No Risk, Low, Medium, or High), and provide brief descriptions.
+        
+        4. Use the following guidelines for each category:
+        
+           a. Property Assessment:
+              - Evaluate the property age and its impact on potential structural issues or maintenance needs
+              - Assess the construction type and its durability
+              - Review the safety features and their adequacy
+        
+           b. Location Factors:
+              - Research the location for potential natural disaster risks (e.g., floods, earthquakes, hurricanes)
+              - Evaluate the neighborhood safety and crime rates
+        
+           c. Liability Risks:
+              - Consider potential tenant safety issues based on the property features and condition
+              - Assess regulatory compliance risks related to local housing laws and building codes
+        
+        5. After analyzing all categories, determine the overall risk level (No Risk, Low, Medium, or High) for the property.
+        6. Ensure that your assessment is comprehensive, objective, and based solely on the provided information. Do not make assumptions about information that is not explicitly given.
+        
+        7. Follow any additional format instructions provided:
+        {format_instructions}
+        
+        Remember to provide clear, concise, and professional language throughout your assessment. Your goal is to give an accurate and useful risk evaluation for the multi-family property based on the given information.
     
     {format_instructions}
     """
