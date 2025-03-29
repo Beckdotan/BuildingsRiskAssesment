@@ -16,7 +16,7 @@ load_dotenv()
 # Define response schemas for structured output
 response_schemas = [
     ResponseSchema(name="overall_risk_level", description="The overall risk level of the property: 'No Risk', 'Low', 'Medium', or 'High'"),
-    ResponseSchema(name="categories", description="A list of risk categories with their risk levels and factors")
+    ResponseSchema(name="categories", description="A list of risk categories, where each category must have exactly these fields: 'category_name' (string), 'category_risk_level' (one of: 'No Risk', 'Low', 'Medium', 'High'), and 'risk_factors' (array of objects where each object has exactly these fields: 'category' (string), 'risk_level' (one of: 'No Risk', 'Low', 'Medium', 'High'), and 'description' (string))")
 ]
 
 output_parser = StructuredOutputParser.from_response_schemas(response_schemas)
@@ -97,13 +97,28 @@ def get_risk_assessment(property_data, provider="openai", model_name=None, tempe
     # Parse the result
     try:
         parsed_output = output_parser.parse(result)
+        
+        # Ensure all required fields are present
+        if not all(k in parsed_output for k in ["overall_risk_level", "categories"]):
+            raise ValueError("Missing required fields in LLM output")
+            
+        # Validate each category has required fields
+        for category in parsed_output["categories"]:
+            if not all(k in category for k in ["category_name", "category_risk_level", "risk_factors"]):
+                raise ValueError("Missing required fields in category")
+                
+            # Validate each risk factor has required fields
+            for factor in category["risk_factors"]:
+                if not all(k in factor for k in ["category", "risk_level", "description"]):
+                    raise ValueError("Missing required fields in risk factor")
+        
         return parsed_output
     except Exception as e:
         # Fallback in case parsing fails
         print(f"Error parsing LLM output: {e}")
         print(f"Raw output: {result}")
         
-        # Return a basic assessment as fallback
+        # Return a basic assessment as fallback with all required fields
         return {
             "overall_risk_level": "Medium",
             "categories": [
