@@ -63,7 +63,38 @@ def get_llm(provider="openai", model_name=None, temperature=0.2):
         return ChatOpenAI(temperature=temperature, model_name=model_name or default_model)
 
 async def assess_property_category(property_data, category_name, llm):
-    """Generate a risk assessment for a specific category."""
+    """
+    Generate a risk assessment for a specific category of property risk.
+    
+    This asynchronous function evaluates property data for a given risk category using an LLM.
+    It creates a structured risk assessment with multiple risk factors and an average risk level.
+    
+    Parameters:
+        property_data (PropertyData): Pydantic model containing property information such as age,
+            number of units, construction type, safety features, and location.
+        category_name (str): The risk category to assess. Options include:
+            - "Property Assessment"
+            - "Location Factors"
+            - "Liability Risks"
+        llm (LLM): Language model instance to use for generating the assessment.
+            
+    Returns:
+        RiskCategory: A structured assessment containing:
+            - category_name (str): The category being assessed
+            - category_risk_level (RiskLevel): The average risk level for the category
+            - risk_factors (List[RiskFactor]): Individual risk factors with descriptions
+            
+    Notes:
+        - Each category uses a specialized prompt that guides the LLM to analyze specific aspects
+        - Risk level for each category is calculated as the average of all risk factors
+        - Risk levels are mapped from "No Risk", "Low", "Medium", to "High"
+        - Includes error handling to return a fallback assessment if processing fails
+        
+    Examples:
+        >>> llm = get_llm("openai")
+        >>> category = await assess_property_category(property_data, "Property Assessment", llm)
+        >>> print(category.category_risk_level)
+    """
     
     # Define detailed prompt templates for each category
     templates = {
@@ -315,7 +346,38 @@ async def assess_property_category(property_data, category_name, llm):
         )
 
 async def get_risk_assessment(property_data, provider="openai", model_name=None, temperature=0.2):
-    """Generate a comprehensive risk assessment by running parallel assessments for each category."""
+    """
+    Generate a comprehensive multi-category risk assessment for a property.
+    
+    This asynchronous function coordinates parallel assessments across multiple risk categories
+    and calculates an overall risk level based on the average of all category levels.
+    
+    Parameters:
+        property_data (PropertyData): Pydantic model containing property information such as age,
+            number of units, construction type, safety features, and location.
+        provider (str): The LLM provider to use. Options include "openai" or "anthropic".
+            Defaults to "openai".
+        model_name (str, optional): The specific model to use.
+            If None, defaults to provider-specific defaults.
+        temperature (float): Controls the randomness of the output.
+            Defaults to 0.2 for more consistent results.
+            
+    Returns:
+        dict: A complete risk assessment containing:
+            - overall_risk_level (str): Average risk level across all categories
+            - categories (List[RiskCategory]): Individual category assessments
+            
+    Notes:
+        - Runs category assessments in parallel for faster processing
+        - Calculates overall risk as the average of all category risks
+        - Risk levels are rounded to the nearest level: "No Risk", "Low", "Medium", or "High"
+        
+    Examples:
+        >>> assessment = await get_risk_assessment(property_data)
+        >>> print(assessment["overall_risk_level"])
+        >>> for category in assessment["categories"]:
+        >>>     print(f"{category.category_name}: {category.category_risk_level}")
+    """
     # Initialize the language model
     llm = get_llm(provider, model_name, temperature)
     
