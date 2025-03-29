@@ -14,7 +14,7 @@ function App() {
     setError(null);
     try {
       console.log('Submitting property data:', propertyData);
-      const response = await axios.post('http://localhost:8000/api/assess', propertyData);
+      const response = await axios.post('http://localhost:5000/api/assess', propertyData);
       console.log('Response received:', response.data);
       setAssessment(response.data);
     } catch (err) {

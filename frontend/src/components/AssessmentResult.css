@@ -55,14 +55,19 @@
   display: inline-block;
 }
 
+.risk-level.no-risk {
+  background-color: #e9ecef;
+  color: #6c757d;
+}
+
 .risk-level.low {
-  background-color: #d5f5e3;
-  color: #27ae60;
+  background-color: #d1ecf1;
+  color: #0c5460;
 }
 
 .risk-level.medium {
-  background-color: #fef9e7;
-  color: #f39c12;
+  background-color: #fdebd0;
+  color: #e67e22;
 }
 
 .risk-level.high {
@@ -88,14 +93,19 @@
   border-left: 4px solid #ddd;
 }
 
+.risk-factor.no-risk {
+  background-color: #f8f9fa;
+  border-left-color: #6c757d;
+}
+
 .risk-factor.low {
-  background-color: #f8fffa;
-  border-left-color: #27ae60;
+  background-color: #f1f8fa;
+  border-left-color: #0c5460;
 }
 
 .risk-factor.medium {
-  background-color: #fffcf5;
-  border-left-color: #f39c12;
+  background-color: #fff7ef;
+  border-left-color: #e67e22;
 }
 
 .risk-factor.high {
@@ -122,14 +132,19 @@
   font-weight: bold;
 }
 
+.risk-factor.no-risk .risk-level-badge {
+  background-color: #e9ecef;
+  color: #6c757d;
+}
+
 .risk-factor.low .risk-level-badge {
-  background-color: #d5f5e3;
-  color: #27ae60;
+  background-color: #d1ecf1;
+  color: #0c5460;
 }
 
 .risk-factor.medium .risk-level-badge {
-  background-color: #fef9e7;
-  color: #f39c12;
+  background-color: #fdebd0;
+  color: #e67e22;
 }
 
 .risk-factor.high .risk-level-badge {
@@ -137,11 +152,24 @@
   color: #e74c3c;
 }
 
-.recommendations ul {
-  padding-left: 1.5rem;
+.risk-category {
+  margin-top: 2rem;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 1rem;
+  background-color: #f9f9f9;
 }
 
-.recommendations li {
-  margin-bottom: 0.5rem;
-  line-height: 1.5;
+.category-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.category-header h3 {
+  margin: 0;
+  color: #333;
 }

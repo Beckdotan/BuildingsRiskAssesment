@@ -1,27 +1,8 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
-from typing import List, Optional
 import uvicorn
 import os
-
-# Define Pydantic models for request validation
-class PropertyData(BaseModel):
-    propertyAge: int
-    numberOfUnits: int
-    constructionType: str
-    safetyFeatures: List[str]
-
-# Define response models
-class RiskFactor(BaseModel):
-    category: str
-    risk_level: str
-    description: str
-
-class RiskAssessment(BaseModel):
-    overall_risk_score: int
-    risk_factors: List[RiskFactor]
-    recommendations: List[str]
+from models import PropertyData, RiskLevel, RiskFactor, RiskCategory, RiskAssessment
 
 # Create FastAPI app
 app = FastAPI(title="Multi-Family Property Risk Assessment API")
@@ -40,28 +21,61 @@ async def assess_property(property_data: PropertyData):
     # In a real implementation, this would integrate with an LLM
     # For now, we'll return a mock response
     risk_assessment = {
-        "overall_risk_score": 65,
-        "risk_factors": [
+        "overall_risk_level": "Medium",
+        "categories": [
             {
-                "category": "Building Age",
-                "risk_level": "Medium",
-                "description": "The property's age suggests potential issues with electrical systems and plumbing."
+                "category_name": "Property Assessment",
+                "category_risk_level": "Medium",
+                "risk_factors": [
+                    {
+                        "category": "Building Age",
+                        "risk_level": "High",
+                        "description": "The property's age suggests potential issues with electrical systems and plumbing."
+                    },
+                    {
+                        "category": "Construction Materials",
+                        "risk_level": "Low",
+                        "description": "The construction materials used are generally resistant to common hazards."
+                    },
+                    {
+                        "category": "Safety Features",
+                        "risk_level": "Medium",
+                        "description": "Some essential safety features are present, but additional measures could improve overall safety."
+                    }
+                ]
             },
             {
-                "category": "Construction Type",
-                "risk_level": "Low",
-                "description": "The construction materials used are generally resistant to common hazards."
+                "category_name": "Location Factors",
+                "category_risk_level": "Low",
+                "risk_factors": [
+                    {
+                        "category": "Natural Disasters",
+                        "risk_level": "No Risk",
+                        "description": "The property is located in an area with low natural disaster probability."
+                    },
+                    {
+                        "category": "Neighborhood Safety",
+                        "risk_level": "Low",
+                        "description": "The neighborhood has a relatively low crime rate and good emergency services access."
+                    }
+                ]
             },
             {
-                "category": "Safety Features",
-                "risk_level": "Medium",
-                "description": "Some essential safety features are present, but additional measures could improve overall safety."
+                "category_name": "Liability Risks",
+                "category_risk_level": "Medium",
+                "risk_factors": [
+                    {
+                        "category": "Tenant Safety",
+                        "risk_level": "Medium",
+                        "description": "Some potential liability concerns related to common areas and facility maintenance."
+                    },
+                    {
+                        "category": "Regulatory Compliance",
+                        "risk_level": "Low",
+                        "description": "The property appears to meet most regulatory requirements with minor improvements needed."
+                    }
+                ]
             }
-        ],
-        "recommendations": [
-            "Consider updating electrical systems",
-            "Implement additional fire safety measures",
-            "Regular inspection of plumbing systems is advised"
         ]
     }
     
