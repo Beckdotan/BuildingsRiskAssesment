@@ -1,5 +1,5 @@
 from langchain.llms import OpenAI, Anthropic
-from langchain.prompts import PromptTemplate
+from langchain.prompts import PromptTemplate, ChatPromptTemplate, SystemMessagePromptTemplate, HumanMessagePromptTemplate
 from langchain.chains import LLMChain
 from langchain.chat_models import ChatOpenAI
 from langchain.output_parsers import StructuredOutputParser, ResponseSchema
@@ -11,6 +11,7 @@ from typing import Optional, Dict, Any, Union, List
 import asyncio
 import time
 import concurrent.futures
+from prompts.registry import PromptRegistry
 
 # Load environment variables
 load_dotenv()
@@ -19,16 +20,17 @@ load_dotenv()
 category_schema = ResponseSchema(
     name="risk_factors",
     description="""
-    A list of risk factors for this category, where each risk factor must have exactly these fields:
-    1. 'category' (string) - The specific aspect being assessed
+    Format Specification:
+    A list of risk factors for this category. Each risk factor must contain exactly these fields:
+    1. 'category' (string) - The specific aspect being assessed (e.g., Building Age, Construction Type)
     2. 'risk_level' (string) - Must be one of: 'No Risk', 'Low', 'Medium', or 'High'
-    3. 'description' (string) - A detailed explanation of the risk
+    3. 'description' (string) - A detailed explanation of why this aspect presents the specified risk level
     
-    Example:
+    Example Response:
     {
       "risk_factors": [
         {
-          "category": "Building Age",
+          "category": "Building Age", 
           "risk_level": "High",
           "description": "The property's 45-year age suggests significant concerns with electrical systems and plumbing infrastructure."
         },
@@ -96,171 +98,35 @@ async def assess_property_category(property_data, category_name, llm):
         >>> print(category.category_risk_level)
     """
     
-    # Define detailed prompt templates for each category
-    templates = {
-        "Property Assessment": """
-            You are a professional property risk assessor specializing in multi-family properties. Analyze ONLY the PROPERTY ASSESSMENT risks of the given property and provide a detailed risk assessment.
-            
-            <property_info>
-            Property Age: {property_age} years
-            Number of Units: {number_of_units}
-            Construction Type: {construction_type}
-            Safety Features Present: {safety_features}
-            Safety Features Missing: {missing_safety_features}
-            </property_info>
-            
-            Guidelines for Property Assessment:
-            1. Evaluate the property age:
-               - Properties less than 10 years old typically have fewer structural issues
-               - Properties 10-30 years old may have moderate maintenance needs
-               - Properties over 30 years old often have higher risks related to electrical, plumbing, and structural systems
-               
-            2. Assess construction type risks:
-               - Wood Frame: Higher fire risk, potential for termite damage, moderate durability
-               - Brick: Good fire resistance, durability, but susceptible to mortar deterioration in older buildings
-               - Concrete: Excellent fire resistance and durability, but can have water penetration issues
-               - Steel Frame: Good structural integrity, fire-resistant when properly treated
-               - Mixed Materials: Varied risks depending on combinations
-            
-            3. Analyze safety features:
-               - Evaluate both present and missing safety features
-               - Consider building code compliance implications
-               - Assess impact on insurance costs and liability
-            
-            4. Evaluate by property size (units):
-               - Smaller properties (2-4 units): Typically lower management complexity
-               - Medium properties (5-20 units): Moderate management complexity
-               - Large properties (20+ units): Higher complexity, more systems to maintain
-            
-            For EACH risk factor you identify, assign a risk level (No Risk, Low, Medium, or High) and provide a clear explanation.
-            
-            Return ONLY the risk factors for Property Assessment. Include at least 3-5 specific risk factors.
-            
-            {format_instructions}
-        """,
-        
-        "Location Factors": """
-            You are a professional location risk assessor specializing in multi-family properties. Analyze ONLY the LOCATION FACTORS risks of the given property and provide a detailed risk assessment.
-            
-            <property_info>
-            Location: {location}
-            Number of Units: {number_of_units}
-            Property Age: {property_age} years
-            Construction type : {construction_type}
-            
-            </property_info>
-            
-            Guidelines for Location Assessment:
-            1. Natural disaster risks related to building age and location:
-               - Research the location for potential flood zones and when flood-resistant building codes were implemented in this area
-               - Assess earthquake risks and when seismic building codes were implemented in this region
-               - Evaluate hurricane, tornado, or wildfire risks and relevant building code timelines
-               - Consider if the building's age / construction type predates important safety regulations for the specific hazards in this location
-               - Determine if the property would have been built before or after major regulatory updates relevant to its location's risks
-               - Consider the likelihood of this events to happn and the impact on the building they might cause and explain both factors in your final answer. 
-               - IMPORTANT! Make sure you are only refrencing natural dissasters that are relevant to the specific location only! Explain why its relevant! 
-            
-            2. Neighborhood factors:
-               - Evaluate neighborhood safety and crime rates
-               - Consider property values and market trends in the area
-               - Assess infrastructure quality and proximity to amenities
-            
-            3. Regulatory environment:
-               - Local housing regulations and compliance requirements
-               - Zoning restrictions and development trends
-               - Rent control or other regulatory considerations
-               - Age-specific regulations or exemptions that might apply
-            
-            4. Economic factors:
-               - Local employment rates and major employers
-               - Economic stability of the region
-               - Rental market supply and demand
-            
-            For EACH risk factor you identify, assign a risk level (No Risk, Low, Medium, or High) and provide a clear explanation.
-            
-            When evaluating natural disaster risks, use building age to determine if the property was likely built before or after important safety regulations. For example:
-            - If the building is 30 years old in an earthquake-prone area, determine what seismic codes would have been in place then compared to now
-            - If the building is in a flood zone, evaluate if it was constructed before or after modern flood mitigation requirements
-            
-            If the location is "Not specified", focus on general location risks associated with multi-family properties, consider age-related regional risks based on typical building code evolution in the United States, and assume a moderate risk level for most factors.
-            
-            Return ONLY the risk factors for Location Factors. Include at least 3-5 specific risk factors.
-            
-            {format_instructions}
-        """,
-        
-        "Liability Risks": """
-            You are a professional liability risk assessor specializing in multi-family properties. Analyze ONLY the LIABILITY RISKS of the given property and provide a detailed risk assessment.
-            
-            <property_info>
-            Property Age: {property_age} years
-            Number of Units: {number_of_units}
-            Construction Type: {construction_type}
-            Safety Features Present: {safety_features}
-            Safety Features Missing: {missing_safety_features}
-            Location: {location}
-            </property_info>
-            
-            Guidelines for Liability Risk Assessment:
-            1. Tenant safety considerations:
-               - Evaluate how missing safety features impact tenant safety
-               - Consider trip/fall hazards based on property age and type
-               - Assess security risks based on available features
-               - Evaluate fire safety risks based on construction and safety features
-            
-            2. Legal and regulatory compliance:
-               - Building code compliance issues related to property age
-               - ADA compliance considerations
-               - Health and safety regulation requirements
-               - Required disclosures based on property characteristics
-            
-            3. Insurance implications:
-               - Factors that may increase insurance premiums
-               - Potential coverage gaps based on property characteristics
-               - Risk management considerations
-            
-            4. Specific liability concerns:
-               - Environmental hazards possible for this age/type of property
-               - Attractive nuisance concerns
-               - Premises liability issues
-            
-            For EACH risk factor you identify, assign a risk level (No Risk, Low, Medium, or High) and provide a clear explanation.
-            
-            Pay particular attention to missing safety features and their liability implications.
-            
-            Return ONLY the risk factors for Liability Risks. Include at least 3-5 specific risk factors.
-            
-            {format_instructions}
-        """
-    }
+    # Get the prompt template from the registry
+    prompt_registry = PromptRegistry.get_instance()
+    prompt_template = prompt_registry.get_template(category_name)
     
-    # Create the prompt with the appropriate template
-    # Make sure all input variables are defined for each template correctly based on what's in the template
-    if category_name == "Property Assessment":
-        prompt = PromptTemplate(
-            input_variables=["property_age", "number_of_units", "construction_type", 
-                            "safety_features", "missing_safety_features"],
-            template=templates[category_name],
-            partial_variables={"format_instructions": category_format_instructions}
-        )
-    elif category_name == "Location Factors":
-        # Location Factors only needs location and number_of_units based on the template
-        prompt = PromptTemplate(
-            input_variables=["location", "number_of_units", "property_age", "construction_type"],
-            template=templates[category_name],
-            partial_variables={"format_instructions": category_format_instructions}
-        )
-    else:
-        # For "Liability Risks" include all parameters
-        prompt = PromptTemplate(
-            input_variables=["property_age", "number_of_units", "construction_type", 
-                            "safety_features", "missing_safety_features", "location"],
-            template=templates[category_name],
-            partial_variables={"format_instructions": category_format_instructions}
-        )
+    if not prompt_template:
+        raise ValueError(f"No prompt template found for category: {category_name}")
     
-    # Create the LLM chain
-    chain = LLMChain(llm=llm, prompt=prompt)
+    # Get system and user prompts from the template
+    system_prompt = prompt_template.get_system_prompt()
+    user_prompt = prompt_template.get_user_prompt_template()
+    system_input_vars = prompt_template.get_input_variables()['system']
+    user_input_vars = prompt_template.get_input_variables()['user']
+    
+    # Create a ChatPromptTemplate with separate system and user messages
+    system_message_prompt = SystemMessagePromptTemplate.from_template(
+        system_prompt,
+        input_variables=system_input_vars
+    )
+    
+    human_message_prompt = HumanMessagePromptTemplate.from_template(
+        user_prompt,
+        input_variables=user_input_vars
+    )
+    
+    # Combine the system and human messages into a chat prompt template
+    chat_prompt = ChatPromptTemplate.from_messages([system_message_prompt, human_message_prompt])
+    
+    # Create the LLM chain with the chat prompt
+    chain = LLMChain(llm=llm, prompt=chat_prompt)
     
     # Prepare data for the prompt
     safety_features_str = ", ".join(property_data.safetyFeatures) if property_data.safetyFeatures else "None"
@@ -270,32 +136,18 @@ async def assess_property_category(property_data, category_name, llm):
     # Run the chain
     try:
         # Using acall instead of arun for proper async execution
-        # Create input data based on the specific category being processed
-        if category_name == "Property Assessment":
-            input_data = {
-                "property_age": property_data.propertyAge,
-                "number_of_units": property_data.numberOfUnits,
-                "construction_type": property_data.constructionType,
-                "safety_features": safety_features_str,
-                "missing_safety_features": missing_safety_features_str
-            }
-        elif category_name == "Location Factors":
-            input_data = {
-                "location": location_str,
-                "number_of_units": property_data.numberOfUnits,
-                "property_age": property_data.propertyAge,
-                "construction_type": property_data.constructionType
-                
-            }
-        else:  # Liability Risks
-            input_data = {
-                "property_age": property_data.propertyAge,
-                "number_of_units": property_data.numberOfUnits,
-                "construction_type": property_data.constructionType,
-                "safety_features": safety_features_str,
-                "missing_safety_features": missing_safety_features_str,
-                "location": location_str
-            }
+        # Create a base input data dictionary with all possible fields
+        input_data = {
+            "property_age": property_data.propertyAge,
+            "number_of_units": property_data.numberOfUnits,
+            "construction_type": property_data.constructionType,
+            "safety_features": safety_features_str,
+            "missing_safety_features": missing_safety_features_str,
+            "location": location_str,
+            "format_instructions": category_format_instructions
+        }
+        
+        # The prompt template will automatically use only the variables it needs
             
         result = await chain.acall(input_data)
         result = result.get("text", "")
